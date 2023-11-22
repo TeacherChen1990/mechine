@@ -12,14 +12,14 @@ class MyTest(unittest.TestCase):
 
     def test_hello(self):
         print("Testing hello")
-        translator.translate("./asm/hello.asm", "result.tmp")
+        translator.translate("./asm/hello.asm", "./tmp/result.tmp")
         status = filecmp.cmp('./tmp/result.tmp', './target/hello')
         self.assertEqual(status, True)
 
 
     def test_cat(self):
         print("Testing cat")
-        translator.translate("./asm/cat.asm", "result.tmp")
+        translator.translate("./asm/cat.asm", "./tmp/result.tmp")
         status = filecmp.cmp('./tmp/result.tmp', './target/cat')
         self.assertEqual(status, True)
 
