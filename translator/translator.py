@@ -1,5 +1,5 @@
 import re
-from constant.ISA import InstructionType, NO_ARGUMENT
+from computer.register import InstructionType, NO_ARGUMENT
 
 
 def check_string(re_exp: str, target: str) -> bool:

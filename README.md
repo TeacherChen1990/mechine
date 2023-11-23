@@ -1,10 +1,8 @@
 
 * asm | acc | neum | hw | tick| struct | stream| mem | prob5
 
-## 指令编程规范
-
+## 编程语言设计
 * 指令本身不区分大小写，但是符号声明除外。例如 ld #1 等于 LD #1
-
 * 第一个函数是_start，即输入.
 * 指令按顺序执行。指令操作释义如下：
 
@@ -208,8 +206,13 @@ VARIABLE
 指令实现:
 * prob5： /asm/prob5.asm
 
-测试:
+## 手动测试:
 
 * 机器测试：test_machine.py
 * 翻译测试：test_translator.py
+
+## 自动测试：
+  GIT地址：https://github.com/TeacherChen1990/mechine
+  提交代码(master分支)之后，会自动触发Python application检测，自动执行执行test_machine.py、test_translator.py，检测听过
+
 

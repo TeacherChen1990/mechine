@@ -1,7 +1,10 @@
-from constant.ISA import read_code, Instruction, RegisterType, InstructionType, de_char, char, MATH_INSTRUCTION, \
-    STACK_INSTRUCTION, DATA_INSTRUCTION
 import re
+from computer.register import read_code, Instruction, RegisterType, InstructionType, MATH_INSTRUCTION, \
+    STACK_INSTRUCTION, DATA_INSTRUCTION
+from computer.mem_char import de_char, char
 
+
+""" 标识位 """
 N = 1
 Z = 2
 V = 4
@@ -56,7 +59,7 @@ class Buffer:
 
 
 class DataPath:
-    def __init__(self, size: int, inputfile: str):
+    def __init__(self, size: int, input_file: str):
         self.memory = [Cell()] * size
         self.stack = [0] * 256
         self.size = size
@@ -74,8 +77,8 @@ class DataPath:
         self.input_index = int(size * 3 / 4 - 1)
         self.output_index = self.input_index
         self.io_part = int(size * 3 / 4 - 1)
-        if inputfile != '':
-            with open(inputfile) as f:
+        if input_file != '':
+            with open(input_file) as f:
                 c = f.read()
                 for i in c:
                     assert self.input_index < self.size, 'Input file too large!'
@@ -115,6 +118,8 @@ class DataPath:
 
 
 class ALU:
+    """ 算数逻辑单元 """
+
     def __init__(self):
         self.left = 0
         self.right = 0
@@ -124,23 +129,23 @@ class ALU:
     def add(left: int, right: int):
         result = left + right
         if left + right > MAX:
-            result = result & (2 ** 31 - 1)
+            result = result & MAX
             result = -2 ** 31 + result
         elif left + right < MIN:
             result = -left - right
-            result = result & (2 ** 31 - 1)
+            result = result & MAX
             result = result - 1
         return result
 
     @staticmethod
     def min(left: int, right: int):
         result = left - right
-        if left - right > MAX:
-            result = result & (2 ** 31 - 1)
+        if result > MAX:
+            result = result & MAX
             result = -2 ** 31 + result
-        elif left - right < MIN:
+        elif result < MIN:
             result = -left - right
-            result = result & (2 ** 31 - 1)
+            result = result & MAX
         return result
 
     @staticmethod
@@ -165,7 +170,11 @@ class ALU:
     def add_one(self):
         self.right = self.get_right() + 1
 
-    def act(self, f):
+    def action(self, f):
+        """
+            执行指定操作
+            @param f 需要执行的指令
+        """
         if f == ALU.add:
             if self.left > 0 and self.right > 0 and f(self.left, self.right) < 0:
                 self.nzvc = V + C + N
@@ -213,21 +222,27 @@ class ALU:
 
 class CPU:
     def __init__(self, datapath: DataPath, program: {}):
+        # 输入的指令集合
         self.program = program
+        # 执行的函数集合
         self.fun = {}
+        # 变量集合
         self.var = {}
+        # 指令索引集合
         self.position = []
         self.datapath = datapath
         self.tick = 0
         self.alu = ALU()
 
     def tick_tick(self):
+        """ 时钟 """
         self.tick += 1
 
     def current_tick(self):
         return self.tick
 
     def decode(self):
+        """ 解码 """
         self.fun = self.program['Function']
         end = 0
         for i in self.program['Instruction']:
@@ -263,7 +278,7 @@ class CPU:
     def read_ins(self):
         # IP->AR
         self.alu.put_right(self.datapath.get_value_register('IP'))
-        r = self.alu.act(ALU.or_operation)
+        r = self.alu.action(ALU.or_operation)
         self.datapath.set_value_register('AR', r)
         self.tick_tick()
         # IP + 1 -> IP, [AR] -> IR
@@ -304,12 +319,12 @@ class CPU:
         self.tick_tick()
         if opr == ALU.div:
             # result.tmp ->　AC
-            r = self.alu.act(opr)
+            r = self.alu.action(opr)
             self.datapath.set_value_register("AC", r)
             self.tick_tick()
         else:
             # result.tmp ->　AC
-            result = self.alu.act(opr)
+            result = self.alu.action(opr)
             self.datapath.set_value_register("AC", result)
             self.tick_tick()
 
@@ -337,7 +352,7 @@ class CPU:
                 # -AC->AC, nzvc -> PS
                 self.alu.put_left(self.datapath.get_value_register("AC"))
                 self.tick_tick()
-                self.datapath.set_value_register("AC", self.alu.act(ALU.inversion))
+                self.datapath.set_value_register("AC", self.alu.action(ALU.inversion))
                 self.set_nzvc(Z)
                 self.datapath.set_value_register("PS", self.get_nzvc())
                 self.tick_tick()
@@ -346,7 +361,7 @@ class CPU:
                 self.alu.put_right(self.addressing(ins))
                 # AC - arg to check nzcv -> PS
                 self.alu.put_left(self.datapath.get_value_register("AC"))
-                self.alu.act(ALU.min)
+                self.alu.action(ALU.min)
                 self.datapath.set_value_register("PS", self.get_nzvc())
                 self.tick_tick()
         elif ins.instruction in DATA_INSTRUCTION:
@@ -376,7 +391,7 @@ class CPU:
                         self.alu.put_right(self.var[arg])
                     else:
                         self.alu.put_right(int(arg))
-                    self.datapath.set_value_register("AR", self.alu.act(ALU.or_operation))
+                    self.datapath.set_value_register("AR", self.alu.action(ALU.or_operation))
                     ## AC -> [AR]
                     self.datapath.set_value_memory(self.datapath.get_value_register("AR"),
                                                    self.datapath.get_value_register("AC"))
@@ -388,7 +403,9 @@ class CPU:
                     self.datapath.output_buffer.write_pointer += 1
                     self.tick_tick()
         elif ins.instruction in STACK_INSTRUCTION:
+            """ 堆栈操作 """
             if ins.instruction == InstructionType.PUSH:
+                """ 进栈 """
                 # SP-1 -> SP
                 self.datapath.set_value_register('SP', self.datapath.get_value_register('SP') - 1)
                 self.tick_tick()
@@ -396,6 +413,7 @@ class CPU:
                 self.datapath.stack[self.datapath.get_value_register("SP")] = self.datapath.get_value_register("AC")
                 self.tick_tick()
             else:
+                """ 出栈 """
                 # [SP] -> AC
                 self.datapath.set_value_register("AC", self.datapath.stack[self.datapath.get_value_register("SP")])
                 self.tick_tick()
@@ -413,13 +431,13 @@ class CPU:
             elif ins.instruction == InstructionType.CALL:
                 # AC->BR save parameter
                 self.alu.put_left(self.datapath.get_value_register('AC'))
-                self.datapath.set_value_register("BR", self.alu.act(ALU.or_operation))
+                self.datapath.set_value_register("BR", self.alu.action(ALU.or_operation))
                 self.tick_tick()
                 # IP ->　AC
                 arg = ins.args[0]
                 assert arg in self.fun.keys(), "You are trying call a not existed function"
                 self.alu.put_right(self.datapath.get_value_register('IP'))
-                self.datapath.set_value_register("AC", self.alu.act(ALU.or_operation))
+                self.datapath.set_value_register("AC", self.alu.action(ALU.or_operation))
                 self.tick_tick()
                 # push
                 new_ins = Instruction(InstructionType.PUSH, [])
@@ -430,7 +448,7 @@ class CPU:
                 self.tick_tick()
                 # BR->AC save parameter
                 self.alu.put_left(self.datapath.get_value_register('BR'))
-                self.datapath.set_value_register("AC", self.alu.act(ALU.or_operation))
+                self.datapath.set_value_register("AC", self.alu.action(ALU.or_operation))
                 self.tick_tick()
             elif ins.instruction == InstructionType.RET:
                 # AC->BR make sure that result.tmp of function is saved
@@ -442,7 +460,7 @@ class CPU:
                 self.position.pop()
                 # AC -> IP
                 self.alu.put_left(self.datapath.get_value_register("AC"))
-                self.datapath.set_value_register("IP", self.alu.act(ALU.or_operation))
+                self.datapath.set_value_register("IP", self.alu.action(ALU.or_operation))
                 self.tick_tick()
                 # BR->AC
                 self.datapath.set_value_register("AC", self.datapath.get_value_register("BR"))
