@@ -98,7 +98,6 @@
 ### 指挥系统
 
 * 机器位 -- 32位。
-* 创建者 - 冯·诺依曼建筑事务所
 * 寄存器：
 
   * IP计数器
@@ -215,6 +214,6 @@ VARIABLE
 
 ## 自动测试：
   GIT地址：https://github.com/TeacherChen1990/mechine
-  提交代码(master分支)之后，会自动触发Python application检测，自动执行执行test_machine.py、test_translator.py，检测听过
+  提交代码(master分支)之后，会自动触发Python application检测，自动执行执行test_machine.py、test_translator.py，检测通过
 
 
