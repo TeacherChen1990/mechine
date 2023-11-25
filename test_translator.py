@@ -3,7 +3,9 @@ import unittest
 import filecmp
 
 
-class MyTest(unittest.TestCase):
+class TranslatorTest(unittest.TestCase):
+    """ 翻译测试 """
+
     def setUp(self) -> None:
         print("Test of translator beginning:")
 
@@ -16,16 +18,14 @@ class MyTest(unittest.TestCase):
         status = filecmp.cmp('./tmp/result.tmp', './target/hello')
         self.assertEqual(status, True)
 
-
     def test_cat(self):
         print("Testing cat")
         translator.translate("./asm/cat.asm", "./tmp/result.tmp")
         status = filecmp.cmp('./tmp/result.tmp', './target/cat')
         self.assertEqual(status, True)
 
-
     def test_prob5(self):
         print("Testing problem5")
-        translator.translate("./asm/problem5.asm","result")
-        status = filecmp.cmp('result', 'target/problem5')
+        translator.translate("./asm/problem5.asm", "./tmp/result.tmp")
+        status = filecmp.cmp('./tmp/result.tmp', 'target/problem5')
         self.assertEqual(status, True)

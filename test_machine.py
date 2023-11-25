@@ -3,7 +3,9 @@ from machine import machine
 import unittest
 
 
-class MyTest(unittest.TestCase):
+class MachineTest(unittest.TestCase):
+    """ 处理器测试 """
+
     def setUp(self) -> None:
         print("Test beginning:")
 
@@ -13,12 +15,10 @@ class MyTest(unittest.TestCase):
     def test_cat(self):
         print("Testing cat")
         translator.translate('./asm/cat.asm', './asm/target')
-        result = machine.start('./asm/target', './asm/test.txt')
+        result = machine.start('./asm/target', './asm/cat_test.txt')
         text = ''
-        with open('./asm/test.txt') as f:
+        with open('asm/cat_test.txt') as f:
             text = f.read()
-        print(text)
-        print(result)
         self.assertEqual(result, text)
 
     def test_hello(self):

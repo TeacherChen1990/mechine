@@ -1,7 +1,6 @@
 import re
-from computer.register import read_code, Instruction, RegisterType, InstructionType, MATH_INSTRUCTION, \
-    STACK_INSTRUCTION, DATA_INSTRUCTION
-from computer.mem_char import de_char, char
+from computer.register import *
+from computer.mem_char import *
 
 
 """ 标识位 """
@@ -14,6 +13,7 @@ MIN = -2 ** 31  # -2^31
 
 
 class Cell:
+    """ 内存单元 """
     def __init__(self):
         self.value = -1
         self.ins = Instruction(InstructionType.ADD, [])
@@ -28,6 +28,7 @@ def check_string(re_exp: str, target: str) -> bool:
 
 
 class Register:
+    """ 寄存器 """
     def __init__(self, type: RegisterType):
         self.name = type
         if type == RegisterType.SP:
@@ -35,11 +36,11 @@ class Register:
         else:
             self.value = 0
 
-    # return an int or an instruction
+    # 获取指令
     def get_value(self):
         return self.value
 
-    # set an int or an instruction
+    # 指令存储
     def set_value(self, value):
         self.value = value
 
@@ -62,8 +63,10 @@ class Buffer:
 
 
 class DataPath:
+    """ 数据存储 """
     def __init__(self, size: int, input_file: str):
-        self.memory = [Cell()] * size
+        """ 模拟内存 """
+        self.memory = [Cell() for _ in range(size)]
         self.stack = [0] * 1024
         self.size = size
         self.input_buffer = Buffer(1024)
@@ -114,6 +117,7 @@ class DataPath:
         return self.memory[index].value
 
     def print_registers(self):
+
         print("BR:%s, AC:%s, SP:%s, PS:%s, IP:%s, AR:%s, IR:%s" %
               (self.get_string_register('BR'), self.get_string_register('AC'),
                self.get_string_register('SP'), self.get_string_register('PS'), self.get_string_register('IP'),
@@ -129,31 +133,36 @@ class ALU:
         self.nzvc = 0
 
     @staticmethod
+    def _handle_overflow(result):
+        """ 炒作最大最小值判定 """
+        if result > MAX:
+            result &= MAX
+            result = MIN + result
+        elif result < MIN:
+            result = -result
+            result &= MAX
+            result -= 1
+        return result
+
+    @staticmethod
     def add(left: int, right: int):
         result = left + right
-        if left + right > MAX:
-            result = result & MAX
-            result = -2 ** 31 + result
-        elif left + right < MIN:
-            result = -left - right
-            result = result & MAX
-            result = result - 1
+        result = ALU._handle_overflow(result)
         return result
 
     @staticmethod
     def min(left: int, right: int):
         result = left - right
-        if result > MAX:
-            result = result & MAX
-            result = -2 ** 31 + result
-        elif result < MIN:
-            result = -left - right
-            result = result & MAX
+        result = ALU._handle_overflow(result)
         return result
 
     @staticmethod
     def div(left: int, right: int):
-        return int(left / right)
+        try:
+            return left // right
+        except ZeroDivisionError:
+            print("Error: Division by zero")
+            return None
 
     @staticmethod
     def mul(left: int, right: int):
@@ -299,6 +308,7 @@ class CPU:
 
     # get proper value
     def addressing(self, ins: Instruction):
+        """ 寻址 """
         arg = ins.args[0]
         if arg.isdigit():
             # Decoder -> AR
@@ -331,10 +341,10 @@ class CPU:
             self.datapath.set_value_register("AC", result)
             self.tick_tick()
 
-    def set_nzvc(self, var: int):
+    def set_nzvc(self, var: int) -> None:
         self.alu.nzvc = var
 
-    def get_nzvc(self):
+    def get_nzvc(self) -> int:
         return self.alu.nzvc
 
     def ins_execute(self, ins: Instruction, position: str) -> int:
@@ -484,11 +494,14 @@ class CPU:
         return 0
 
     def run_ins(self, position: str) -> int:
+        """ 执行指令 """
         ins: Instruction
         self.read_ins()
         ins = self.datapath.get_value_register("IR")
         result = self.ins_execute(ins, position)
+        # 记录日志
         print("DEBUG:root:{ ", end="")
+        # 记录tick
         print("Tick:{}".format(self.tick), end=", ")
         self.datapath.print_registers()
         print(" }", end="  ")

@@ -3,71 +3,12 @@ import re
 from computer.register import InstructionType, NO_ARGUMENT
 
 
-def check_string(re_exp: str, target: str) -> bool:
-    """
-    判断字符串和正则表达式是否匹配
-    :param re_exp: 正则表达式
-    :param target: 需要判断的字符串
-    :return: bool
-    """
-    res = re.search(re_exp, target)
-    if res:
-        return True
-    else:
-        return False
+def read_asm_file(source_name):
+    """ 读取asm程序源码 """
+    result, last_fun = "", ""
+    variable, function_point, label_in_fun = dict(), dict(), dict()
+    index, instruction_index = 0, 0
 
-
-def read_variable(line: str) -> tuple[str, str]:
-    """  读取变量  """
-    assert check_string("^.*: *0 *$", line) or check_string("^.*: *[1-9]+[0-9]* *$", line) or check_string(
-        "^.*: *\".*\" *, *[1-9]+[0-9]* *$", line) or check_string("^.*: *\".*\" *$",
-                                                                  line), "Illegal variable {}".format(line)
-    key = line.split(":", 1)[0]
-    value = line.split(":", 1)[1]
-    if check_string("^.*: *-?[1-9]+[0-9]* *$", line):  ##数字
-        key = re.findall("\S*", key)[0]
-        value = re.findall("-?[1-9]+[0-9]*", value)[0]
-    elif check_string("^.*: *0 *$", line):
-        key = re.findall("\S*", key)[0]
-        value = '0'
-    elif check_string("^.*: *\".*\" *$", line):  ##字符串
-        keys = re.findall("\S*", key)
-        key = keys[0]
-        value = re.findall("\".*\"", value)[0]
-        value = value + "," + str(len(value) - 2)
-    else:
-        keys = re.findall("\S*", key)
-        key = keys[0]
-        values = value.rsplit(',', 1)
-        left = values[0].rsplit("\"", 1)
-        a = left[0] + "\""
-        b = re.sub(r" ", "", values[1])
-        value = a + "," + b
-    return key, value
-
-
-def pre_translation(line: str) -> str:
-    """
-    翻译内容预处理
-    1、将每行内容转换为大写
-    2、去掉";"之后的内容(仅作为注释使用)
-    3、去掉制表符(\t)和换行符(\n)
-    """
-    line = line.upper()
-    line = line.split(";")[0]
-    line = re.sub(r"\t+", "", line)
-    line = re.sub(r"\n", "", line)
-    return line
-
-
-def translate(source_name: str, target_name: str):
-    result = ""
-    variable = dict()
-    function_point = dict()  ## functions
-    label_in_fun = dict()
-    index = 0
-    instruction_index = 0
-    last_fun = ""
     with open(source_name, "r") as f:
         line = f.readline()
         index += 1
@@ -133,6 +74,73 @@ def translate(source_name: str, target_name: str):
                         instruction_index += 1
             line = f.readline()
             index += 1
+    return result, function_point, label_in_fun, variable, instruction_index
+
+
+def check_string(re_exp: str, target: str) -> bool:
+    """
+    判断字符串和正则表达式是否匹配
+    :param re_exp: 正则表达式
+    :param target: 需要判断的字符串
+    :return: bool
+    """
+    return bool(re.search(re_exp, target))
+
+
+def read_variable(line: str) -> tuple[str, str]:
+    """  读取变量  """
+    assert any(check_string(pattern, line) for pattern in [
+        "^.*: *0 *$",
+        "^.*: *[1-9]+[0-9]* *$",
+        "^.*: *\".*\" *, *[1-9]+[0-9]* *$",
+        "^.*: *\".*\" *$"
+    ]), f"Illegal variable {line}"
+
+    key, value = map(str.strip, line.split(":", 1))
+    key = re.findall("\S*", key)[0]
+
+    if check_string("^.*: *-?[1-9]+[0-9]* *$", line):  # Numeric
+        value = re.findall("-?[1-9]+[0-9]*", value)[0]
+    elif check_string("^.*: *0 *$", line):
+        value = '0'
+    elif check_string("^.*: *\".*\" *$", line):  # String
+        value = re.findall("\".*\"", value)[0] + f",{len(value) - 2}"
+    else:
+        left, right = map(str.strip, value.rsplit(',', 1))
+        left = left.rsplit("\"", 1)[0] + "\""
+        value = f"{left},{re.sub(r' ', '', right)}"
+
+    return key, value
+
+
+def pre_translation(line: str) -> str:
+    """
+    翻译内容预处理
+    1、将每行内容转换为大写
+    2、去掉";"之后的内容(仅作为注释使用)
+    3、去掉制表符(\t)和换行符(\n)
+    """
+    line = line.upper()
+    line = line.split(";")[0]
+    line = re.sub(r"\t+", "", line)
+    line = re.sub(r"\n", "", line)
+    return line
+
+
+def translate(source_name: str, target_name: str):
+    """
+    翻译：
+    1、获取asm文件内容
+    2、翻译内容后写入指定文件
+    @param source_name 源文件
+    @param target_name 数据写入文件
+    """
+    result, function_point, label_in_fun, variable, instruction_index = read_asm_file(source_name)
+    write_translate(target_name, result, function_point, label_in_fun, variable, instruction_index)
+
+
+def write_translate(target_name: str, result, function_point, label_in_fun, variable, instruction_index):
+    """ 将asm文件翻译内容写入文件 """
     with open(target_name, "w") as f:
         f.write(result)
         f.write("FUNCTION\n")
@@ -161,5 +169,5 @@ def translate(source_name: str, target_name: str):
 
 
 if __name__ == "__main__":
-    assert len(sys.argv) == 3, 'Please only input the name of source file and target file'
+    assert len(sys.argv) == 3, '参数错误'
     translate(sys.argv[0], sys.argv[1])
