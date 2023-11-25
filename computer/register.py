@@ -2,20 +2,20 @@ from enum import Enum, unique
 
 @unique
 class Position(Enum):
-    INS = 1  # 指令
-    FUN = 2  # 函数
-    LAB = 3  # 标签
-    VAR = 4  # 变量
+    INSTRUCTION = 1  # 指令
+    FUNCTION = 2  # 函数
+    LABEL = 3  # 标签
+    VARIABLE = 4  # 变量
 
 
 @unique
 class RegisterType(Enum):
     """ 寄存器 """
-    IP = "IP"  # 计数
+    IP = "IP"  # 指令指针寄存器
     BR = "BR"  # 缓存，例如用于存储除法的余数等等
-    AC = "AC"  # 结果储存
+    AC = "ACC"  # 结果储存
     PS = "PS"  # nzvc
-    SP = "SP"  # 堆栈
+    SP = "SP"  # 堆栈指针寄存器
     AR = "AR"  # 地址
     IR = "IR"
 
@@ -23,13 +23,14 @@ class RegisterType(Enum):
 @unique
 class InstructionType(Enum):
     """ 指令集 """
-    # math
+    # 数学操作
     ADD = "ADD"
     SUB = "SUB"
     CMP = "CMP"
     DIV = "DIV"
     MUL = "MUL"
     INV = "INV"
+    # 内存操作
     LD = 'LD'
     ST = 'ST'
     PUSH = "PUSH"
@@ -86,21 +87,21 @@ class Instruction:
 
 def read_code(filename: str) -> {}:
     program = {'Instruction': [], 'Variable': {}, 'Function': {}}
-    position = Position.INS
+    position = Position.INSTRUCTION
     with open(filename, "r") as f:
         line = f.readline()
         assert line != "", "You open a file, whose format is not property"
         while line:
             line = line.replace("\n", "")
             if line == "FUNCTION":
-                position = Position.FUN
+                position = Position.FUNCTION
             elif line == "LABEL":
-                position = Position.LAB
+                position = Position.LABEL
             elif line == "VARIABLE":
-                position = Position.VAR
+                position = Position.VARIABLE
             else:
                 ins: Instruction
-                if position == Position.INS:
+                if position == Position.INSTRUCTION:
                     term = line.split(" ")
                     ins_type = InstructionType[term[1]]
                     while "" in term:
@@ -110,18 +111,18 @@ def read_code(filename: str) -> {}:
                     else:
                         ins = Instruction(ins_type, term[2:])
                     program['Instruction'].append(ins)
-                elif position == Position.FUN:
+                elif position == Position.FUNCTION:
                     term = line.split(":")
                     while "" in term:
                         term.remove("")
                     program['Function'][term[0]] = dict()
                     program['Function'][term[0]]['self'] = int(term[1])
-                elif position == Position.LAB:
+                elif position == Position.LABEL:
                     term = line.split(":")
                     while "" in term:
                         term.remove("")
                     program['Function'][term[0]][term[1]] = int(term[2])
-                elif position == Position.VAR:
+                elif position == Position.VARIABLE:
                     term = line.split(":", 1)
                     while "" in term:
                         term.remove("")

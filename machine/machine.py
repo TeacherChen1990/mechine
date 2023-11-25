@@ -31,7 +31,7 @@ class Register:
     def __init__(self, type: RegisterType):
         self.name = type
         if type == RegisterType.SP:
-            self.value = 256
+            self.value = 1024
         else:
             self.value = 0
 
@@ -51,9 +51,12 @@ class Register:
 
 
 class Buffer:
+    """ 缓存 """
     def __init__(self, size):
         self.buf = [-1] * size
+        # 读指针起始位
         self.read_pointer = 0
+        # 写指针起始位
         self.write_pointer = 0
         self.size = size
 
@@ -61,10 +64,10 @@ class Buffer:
 class DataPath:
     def __init__(self, size: int, input_file: str):
         self.memory = [Cell()] * size
-        self.stack = [0] * 256
+        self.stack = [0] * 1024
         self.size = size
-        self.input_buffer = Buffer(256)
-        self.output_buffer = Buffer(256)
+        self.input_buffer = Buffer(1024)
+        self.output_buffer = Buffer(1024)
         self.registers = {
             'BR': Register(RegisterType.BR),
             'AC': Register(RegisterType.AC),
@@ -522,15 +525,9 @@ class CPU:
 
 def start(sourcefile, inputfile):
     program = read_code(sourcefile)
-    datapath = DataPath(256, inputfile)
+    datapath = DataPath(1024, inputfile)
     cpu = CPU(program=program, datapath=datapath)
     cpu.decode()
     out = cpu.run()
     return out
 
-
-if __name__ == "__main__":
-    import sys
-
-    assert len(sys.argv) == 3, 'Please only input the name of one file after compiling'
-    start(sys.argv[1], sys.argv[2])

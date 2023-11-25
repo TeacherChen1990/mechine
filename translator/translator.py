@@ -1,3 +1,4 @@
+import sys
 import re
 from computer.register import InstructionType, NO_ARGUMENT
 
@@ -157,14 +158,8 @@ def translate(source_name: str, target_name: str):
             while "" in term:
                 term.remove("")
             print(term)
-            ##a = check_ins(term, label_in_fun,function_point,index - 1),\
-            ##    "Input illegal instruction or parameter".format(index)
-
-    ##print(result.tmp)
 
 
 if __name__ == "__main__":
-    import sys
-
     assert len(sys.argv) == 3, 'Please only input the name of source file and target file'
     translate(sys.argv[0], sys.argv[1])

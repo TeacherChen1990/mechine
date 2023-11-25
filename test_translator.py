@@ -24,5 +24,8 @@ class MyTest(unittest.TestCase):
         self.assertEqual(status, True)
 
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_prob5(self):
+        print("Testing problem5")
+        translator.translate("./asm/problem5.asm","result")
+        status = filecmp.cmp('result', 'target/problem5')
+        self.assertEqual(status, True)

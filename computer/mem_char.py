@@ -1,6 +1,5 @@
 
 
-
 """ 编码字符 """
 char = {
     ' ': 0, 'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8, 'i': 9, 'j': 10,
@@ -24,10 +23,11 @@ de_char = {
 }
 
 
-def get_char(i: int):
+def get_char_index(i: int):
+    """ 获取存储字符的索引 """
     return char[i]
 
 
-def char_var(i: str):
-    assert len(i) == 1, 'Function char_var() is used to translate only one char to it\'s value'
+def get_char_by_index(i: str):
+    assert len(i) == 1, '字符超长'
     return de_char[i]
