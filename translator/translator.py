@@ -89,12 +89,12 @@ def check_string(re_exp: str, target: str) -> bool:
 
 def read_variable(line: str) -> tuple[str, str]:
     """  读取变量  """
-    assert any(check_string(pattern, line) for pattern in [
-        "^.*: *0 *$",
-        "^.*: *[1-9]+[0-9]* *$",
-        "^.*: *\".*\" *, *[1-9]+[0-9]* *$",
-        "^.*: *\".*\" *$"
-    ]), f"Illegal variable {line}"
+    # assert any(check_string(pattern, line) for pattern in [
+    #     "^.*: *0 *$",
+    #     "^.*: *[1-9]+[0-9]* *$",
+    #     "^.*: *\".*\" *, *[1-9]+[0-9]* *$",
+    #     "^.*: *\".*\" *$"
+    # ]), f"Illegal variable {line}"
 
     key, value = map(str.strip, line.split(":", 1))
     key = re.findall("\S*", key)[0]

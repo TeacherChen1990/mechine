@@ -117,7 +117,6 @@ class DataPath:
         return self.memory[index].value
 
     def print_registers(self):
-
         print("BR:%s, AC:%s, SP:%s, PS:%s, IP:%s, AR:%s, IR:%s" %
               (self.get_string_register('BR'), self.get_string_register('AC'),
                self.get_string_register('SP'), self.get_string_register('PS'), self.get_string_register('IP'),
@@ -133,36 +132,31 @@ class ALU:
         self.nzvc = 0
 
     @staticmethod
-    def _handle_overflow(result):
-        """ 炒作最大最小值判定 """
-        if result > MAX:
-            result &= MAX
-            result = MIN + result
-        elif result < MIN:
-            result = -result
-            result &= MAX
-            result -= 1
-        return result
-
-    @staticmethod
     def add(left: int, right: int):
         result = left + right
-        result = ALU._handle_overflow(result)
+        if left + right > MAX:
+            result = result & MAX
+            result = -2 ** 31 + result
+        elif left + right < MIN:
+            result = -left - right
+            result = result & MAX
+            result = result - 1
         return result
 
     @staticmethod
     def min(left: int, right: int):
         result = left - right
-        result = ALU._handle_overflow(result)
+        if result > MAX:
+            result = result & MAX
+            result = -2 ** 31 + result
+        elif result < MIN:
+            result = -left - right
+            result = result & MAX
         return result
 
     @staticmethod
     def div(left: int, right: int):
-        try:
-            return left // right
-        except ZeroDivisionError:
-            print("Error: Division by zero")
-            return None
+        return int(left / right)
 
     @staticmethod
     def mul(left: int, right: int):
@@ -341,10 +335,10 @@ class CPU:
             self.datapath.set_value_register("AC", result)
             self.tick_tick()
 
-    def set_nzvc(self, var: int) -> None:
+    def set_nzvc(self, var: int):
         self.alu.nzvc = var
 
-    def get_nzvc(self) -> int:
+    def get_nzvc(self):
         return self.alu.nzvc
 
     def ins_execute(self, ins: Instruction, position: str) -> int:
